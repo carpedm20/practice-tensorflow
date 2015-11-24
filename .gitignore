@@ -1,5 +1,8 @@
+vocab.txt
 text8
 text8.zip
+simple-examples
+events.out*
 
 ### Vim ###
 [._]*.s[a-w][a-z]
