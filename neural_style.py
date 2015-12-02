@@ -137,3 +137,65 @@ for layer in STYLE_LAYERS:
 x = tf.placeholder('float', shape=shape)
 
 #writer = tf.python.training.summary_io.SummaryWriter("/tmp/vgg", sess.graph_def)
+
+x_shape = (1, ) + content.shape
+
+def conv2d(weight, bias):
+    def make_layer(input):
+        conv = tf.nn.conv2d(input, weight, strides=[1,1,1,1], padding='SAME')
+        return tf.nn.bias_add(conv, bias)
+    return make_layer
+
+def max_pool():
+    def make_layer(input):
+        return tf.nn.max_pool(input, ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME')
+    return make_layer
+
+for input_image in [content_img, style_img]:
+    layer_defs = [
+        'conv_1_1', 'relu_1_1','conv1_2', 'relu_1_2', 'pool_1',
+        'conv_2_1', 'relu_2_1','conv2_2', 'relu_2_2', 'pool_2',
+
+        'conv_3_1', 'relu_3_1','conv3_2', 'relu_3_2',
+        'conv_3_3', 'relu_3_3', 'conv3_4', 'relu_3_4', 'pool_3',
+        'conv_4_1', 'relu_4_1','conv4_2', 'relu_4_2',
+        'conv_4_3', 'relu_4_3', 'conv4_4', 'relu_4_4', 'pool_4',
+
+        'conv_5_1', 'relu_5_1','conv4_2', 'relu_5_2',
+        'conv_5_3', 'relu_5_3', 'conv4_4', 'relu_5_4'
+    ]
+
+    mean = mat['normalization'][0][0][0] # (224, 224, 3)
+    mean_pixel = np.mean(mean, axis=(0,1))
+
+    # mat['layers'] : [1 x 43]
+    constants = mat['layers'][0]
+
+    layers = []
+    for idx, layer_def in enumerate(layer_defs):
+        if 'conv' in layer_def:
+            w = constants[idx][0][0][0][0][0]
+            w = np.transpose(w, (1, 0, 2, 3)) # [3 x 3 x 3 x 64] : 3x3 conv, 3 input, 64 output channels
+            b = constants[idx][0][0][0][0][1] # [1 x 64] -> [64]
+            b = b.reshape(-1)                 # [64]
+            ops = conv2d(w, b)
+        elif 'relu' in layer_def:
+            ops = tf.nn.relu
+        elif 'pool' in layer_def:
+            ops = max_pool()
+        else:
+            raise "Wrong layer def : %s" % layer_def
+
+        if not layers:
+            layers.append(ops(input_image))
+        else:
+            layers.append(ops(layers[-1]))
+
+    layer_dict = dict(zip(layer_defs, layers)
+
+def preprocess(image, mean_pixel):
+    return image - mean_pixel
+
+def unprocess(image, mean_pixel):
+    return image + mean_pixel
+>>>>>>> 1ba7111b60b16ebaca340a567f086b71d3c1c8a4
