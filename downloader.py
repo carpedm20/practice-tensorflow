@@ -2,12 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import re
+import sys
 import requests
 from bs4 import BeautifulSoup as bs4
 from nltk.tokenize import RegexpTokenizer
 
 BASE_URL = "http://www.imsdb.com/scripts/%s.html"
 
+filename = 'scripts.txt'
 movies = [
     "Star Wars: A New Hope", # 1997
     "Star Wars: The Empire Strikes Back", # 1980
@@ -22,21 +24,21 @@ punctuation_remover = RegexpTokenizer(r'\w+')
 def clean_text(text):
     return " ".join(text.strip().lower().split())
 
-for movie in movies[5:6]:
+scripts = []
+for movie in movies[:]:
     url = BASE_URL % "-".join(punctuation_remover.tokenize(movie))
     print "="*40
     print movie
     print "="*40
     print url
     r = requests.get(url)
+    r_text = r.text.replace('QU-IG0N','QUI-GON').replace('FODE BEED', 'FODE/BEED').replace('<b>I...', 'I...')
 
-    soup = bs4(r.text.replace(u'é', u'e').replace(u'É',u'E').encode('utf-8'))
+    soup = bs4(r_text.encode("ascii", "ignore"))
     text_td = soup.find('td',{'class':'scrtext'})
 
     # remove useless table
     [t.extract() for t in text_td('table')]
-
-    scripts = []
 
     if "The Phantom Menace" in movie:
         text = text_td.text
@@ -48,7 +50,7 @@ for movie in movies[5:6]:
         text = text_td.text
         text = re.sub(r' : ',': ',text)
 
-        elems = re.findall(r'\n\n[A-Z0-9\-\. ]+ ?[:;] .*\n\n', text)
+        elems = re.findall(r'\n[A-Z0-9\-\. ]+[:;] .*\n', text)
     else:
         elems = text_td.find_all('b')[3:]
 
@@ -104,10 +106,32 @@ for movie in movies[5:6]:
             except:
                 lines = clean_text(b.next_sibling.text.split('\n\n',1)[0])
 
-        scripts.append((character, lines))
+        if lines == 'from a story by george lucas' or character in ['A','B']:
+            continue
+        else:
+            character = re.sub(r'\(.*\)', '', character).strip()
+            if character == 'boba': character = 'boba fett'
+            if character == 'qui -gon': character = 'qui-gon'
+            if character in ['han/pilot', 'han\'s voice']: character = 'han'
+            if 'pilot' in character: character = 'pilot'
+            if 'luke' in character: character = 'luke'
+            scripts.append((character.lower(), lines))
 
-    for script in scripts[:10]:
-        print script[0], ":", script[1]
-    print "..."
-    for script in scripts[-10:]:
-        print script[0], ":", script[1]
+    if False:
+        for script in scripts[:10]:
+            print script[0], ":", script[1]
+        print "…"
+        for script in scripts[-10:]:
+            print script[0], ":", script[1]
+
+    print " [*] # : %d" % len(scripts)
+
+with open(filename, 'w') as f:
+    for script in scripts:
+        if script[0] == '':
+            break
+        f.write('%s\t%s\n' % (script[0], script[1]))
+
+characters = list(set(script[0] for script in scripts))
+
+print " [*] Finished : %s" % (filename)
