@@ -2,11 +2,13 @@
 simple-examples
 
 # tensorflow
+p2v/embedding
 checkpoint
 *.ckpt*
 events.out*
 
 # Data
+*.pkl
 vocab.txt
 text8
 text8.zip
