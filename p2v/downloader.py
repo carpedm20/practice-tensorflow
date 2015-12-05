@@ -4,8 +4,10 @@
 import re
 import sys
 import requests
+from collections import Counter
 from bs4 import BeautifulSoup as bs4
 from nltk.tokenize import RegexpTokenizer
+from nltk.corpus import stopwords as nltk_stopwords
 
 BASE_URL = "http://www.imsdb.com/scripts/%s.html"
 
@@ -19,6 +21,7 @@ movies = [
     "Star Wars: Revenge of the Sith", # 2005
 ]
 
+stopwords = nltk_stopwords.words('english')
 punctuation_remover = RegexpTokenizer(r'\w+')
 
 def clean_text(text):
@@ -115,6 +118,7 @@ for movie in movies[:]:
             if character in ['han/pilot', 'han\'s voice']: character = 'han'
             if 'pilot' in character: character = 'pilot'
             if 'luke' in character: character = 'luke'
+            if 'vader' in character: character = 'vader'
             scripts.append((character.lower(), lines))
 
     if False:
@@ -126,12 +130,14 @@ for movie in movies[:]:
 
     print " [*] # : %d" % len(scripts)
 
+characters = Counter(script[0] for script in scripts)
+target_characters = characters.most_common(32)
+
 with open(filename, 'w') as f:
     for script in scripts:
-        if script[0] == '':
-            break
-        f.write('%s\t%s\n' % (script[0], script[1]))
-
-characters = list(set(script[0] for script in scripts))
+        if script[0] in [c[0] for c in target_characters]:
+            text = " ".join(word for word in punctuation_remover.tokenize(script[1].lower()) if word not in stopwords and len(word) > 2)
+            if text.strip():
+                f.write('%s\t%s\n' % (script[0], text))
 
 print " [*] Finished : %s" % (filename)

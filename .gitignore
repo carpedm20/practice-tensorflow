@@ -17,6 +17,7 @@ data/4.txt
 data/5.txt
 data/6.txt
 data/7.txt
+*scripts.txt
 imagenet-vgg-verydeep-19.mat
 
 ### Vim ###
