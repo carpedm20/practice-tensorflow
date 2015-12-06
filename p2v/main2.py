@@ -39,7 +39,7 @@ character_size = len(data)
 
 config['vocab_size'] = 71290
 config['vocab_counts'] = vocab_counts
-pos_x, pos_y, neg_y, train, loss, nembed, nearby_character, nearby_val, nearby_idx = w2v(config, pos_x, pos_y)
+pos_x, pos_y, neg_y, train, loss, nembed, nearby_word, nearby_val, nearby_idx = w2v(config, pos_x, pos_y)
 
 # train
 step_size = 100000
@@ -115,7 +115,7 @@ if True:
 def nearby(words, num=20):
     ids = np.array([name2idx.get(x, 0) for x in words])
     vals, idx = sess.run(
-        [nearby_val, nearby_idx], {nearby_character: ids})
+        [nearby_val, nearby_idx], {nearby_word: ids})
     for i in xrange(len(words)):
         print(words[i])
         print()
@@ -125,7 +125,7 @@ def nearby(words, num=20):
 def nearby_with_idx(idxs, num=20):
     ids = np.array(idxs)
     vals, idx = sess.run(
-        [nearby_val, nearby_idx], {nearby_character: ids})
+        [nearby_val, nearby_idx], {nearby_word: ids})
     for i in xrange(len(idxs)):
         print(idx2name[idxs[i]])
         print()
