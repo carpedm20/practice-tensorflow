@@ -41,7 +41,7 @@ def c2v(config):
     pos_loss = tf.nn.sigmoid_cross_entropy_with_logits(pos_y_, tf.ones_like(pos_y_))
     neg_loss = tf.nn.sigmoid_cross_entropy_with_logits(neg_y_, tf.zeros_like(neg_y_))
 
-    loss = (tf.reduce_sum(pos_loss) + tf.reduce_sum(neg_loss)) / batch_size
+    loss = (0.1 * tf.reduce_sum(pos_loss) + 0.9 * tf.reduce_sum(neg_loss)) / batch_size
     train = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
 
     # normalized embedding

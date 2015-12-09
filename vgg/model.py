@@ -1,7 +1,12 @@
+import os
 import numpy as np
 import scipy.io as sio
-import tensorflow as tf
 import scipy.misc as sm
+import tensorflow as tf
+
+from tensorflow.python.platform import gfile
+
+from utils import *
 
 sess = tf.InteractiveSession()
 
@@ -11,9 +16,15 @@ def imread(path):
 mat_path = "./imagenet-vgg-verydeep-19.mat"
 mat = sio.loadmat(mat_path)
 
-def build_conv2d(weight, bias):
+def build_conv2d(w, b):
     def make_layer(input):
-        return tf.nn.conv2d(input, weight, [1,2,2,1], )
+        conv = tf.nn.conv2d(input, w, strides=[1,1,1,1], padding='SAME')
+        return tf.nn.bias_add(conv, np.reshape(b, (b.shape[1])))
+    return make_layer
+
+def build_pool():
+    def make_layer(input):
+        return tf.nn.max_pool(input, ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME')
     return make_layer
 
 layer_tags = [
@@ -36,19 +47,28 @@ mean_pixel = np.mean(mean, axis=(0,1))
 constants = mat['layers'][0]
 
 prev = None
-x = tf.placeholder(tf.int32, [None, width, height, channel_size])
+x = tf.placeholder(tf.float32, [None, None, None, None])
 
+layers = []
 for idx, tag in enumerate(layer_tags):
     if 'conv' in tag:
-        op = build_weight(prev)
+        op = build_conv2d(constants[idx][0][0][0][0][0], constants[idx][0][0][0][0][1])
     elif 'relu' in tag:
-        op = tf.nn.relu(prev)
+        op = tf.nn.relu
     elif 'pool' in tag:
-        op = tf.nn.max_pool(prev), 
+        op = build_pool()
     else:
         raise("Error: %s not found" % tag)
 
-    if prev:
-        layers.append(op(prev))
+    if layers:
+        layers.append(op(layers[-1]))
     else:
         layers.append(op(x))
+
+image_path = os.path.join('./', 'test.png')
+if not os.path.isfile(image_path):
+    tf.logging.fatal('File does not exist %s', image_path)
+image_data = imread(image_path)
+
+sess = tf.InteractiveSession()
+sess.run(layers[-1], feed_dict={x: [image_data]})
